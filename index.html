@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Height Comparison Tool</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<!-- Hero Section -->
+<div class="hero">
+<div class="hero-inner">
+<h1 class="hero-title">Height Comparison Tool</h1>
+<button class="hero-btn" onclick="document.querySelector('.main-container').scrollIntoView({behavior:'smooth'})">Start Comparing Heights</button>
+<p class="example-text">Example: John (5'11" / 180 cm) vs Mike (5'6" / 168 cm) → John is 5 inches (12 cm) taller</p>
+</div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+
+<!-- Left Panel -->
+<div class="panel">
+
+<h3><i class="fa fa-user-plus"></i> Add Person</h3>
+
+<label>Name (optional)</label>
+<input id="name" type="text" placeholder="Enter name...">
+
+<label>Unit</label>
+<select id="unit" class="unit-select">
+<option value="cm">cm</option>
+<option value="ft" selected>ft / inch</option>
+</select>
+
+<label>Height</label>
+<div class="height-inputs">
+<div class="height-field-group">
+<span class="field-label">ft</span>
+<div class="field-controls">
+<button type="button" class="field-btn minus" onclick="stepField('feet',-1)">-</button>
+<input id="feet" type="number" value="5" min="0" max="9">
+<button type="button" class="field-btn plus" onclick="stepField('feet',1)">+</button>
+</div>
+</div>
+<div class="height-field-group">
+<span class="field-label">inch</span>
+<div class="field-controls">
+<button type="button" class="field-btn minus" onclick="stepField('inch',-1)">-</button>
+<input id="inch" type="number" value="7" min="0" max="11">
+<button type="button" class="field-btn plus" onclick="stepField('inch',1)">+</button>
+</div>
+</div>
+</div>
+
+<!-- Hidden cm box for internal use -->
+<div id="cmBox" style="display:none">
+<input id="heightCm" type="number" value="170">
+</div>
+<div id="ftBox" style="display:none"></div>
+
+<div class="slider-row">
+<input type="range" id="slider" min="50" max="274" value="170">
+<span class="slider-cm" id="sliderValue">170 cm</span>
+</div>
+
+<!-- Color Picker -->
+<label>Color</label>
+<div class="color-picker" id="colorPicker">
+<div class="color-dot selected" data-color="#F39C12" style="background:#F39C12"></div>
+<div class="color-dot" data-color="#E74C3C" style="background:#E74C3C"></div>
+<div class="color-dot" data-color="#1ABC9C" style="background:#1ABC9C"></div>
+<div class="color-dot" data-color="#8E44AD" style="background:#8E44AD"></div>
+<div class="color-dot" data-color="#2563EB" style="background:#2563EB"></div>
+<div class="color-dot" data-color="#27AE60" style="background:#27AE60"></div>
+<div class="color-dot color-custom" id="customColorBtn" title="Custom color">
+<i class="fa fa-pencil"></i>
+<input type="color" id="customColorInput" value="#FF6B6B">
+</div>
+</div>
+
+<div class="avatar-dropdown">
+<div class="avatar-dropdown-header" id="avatarDropdownToggle">
+<span><i class="fa fa-user"></i> Choose Avatar</span>
+<i class="fa fa-chevron-down avatar-dropdown-arrow"></i>
+</div>
+<div class="avatar-dropdown-content" id="avatarDropdownContent">
+<div class="avatar-tabs">
+<button class="avatar-tab active" data-tab="male">Male</button>
+<button class="avatar-tab" data-tab="female">Female</button>
+<button class="avatar-tab" data-tab="child">Child</button>
+</div>
+
+<!-- Avatar SVG Grid -->
+<p class="avatar-grid-label">Select avatar</p>
+<div class="avatarGrid" id="avatarMale"></div>
+<div class="avatarGrid" id="avatarFemale" style="display:none"></div>
+<div class="avatarGrid" id="avatarChild" style="display:none"></div>
+</div>
+</div>
+
+<label>Upload Photo</label>
+<input type="file" id="photo" class="file-input" accept="image/*">
+<div id="photoPreview" class="photo-preview" style="display:none;">
+<img id="photoPreviewImg" src="" alt="Preview">
+<button type="button" id="removePhoto" class="remove-photo-btn"><i class="fa fa-times"></i></button>
+</div>
+
+<button id="addBtn" class="add-btn"><i class="fa fa-plus"></i> Add Person</button>
+
+</div>
+
+<!-- Right: Chart Area -->
+<div class="chart-wrapper">
+
+<div class="chart-controls">
+<button id="undoBtn"><i class="fa fa-undo"></i> Undo</button>
+<button id="redoBtn"><i class="fa fa-redo"></i> Redo</button>
+<button id="editBtn"><i class="fa fa-pen"></i> Edit</button>
+<button id="clearBtn"><i class="fa fa-trash"></i> Clear All</button>
+</div>
+
+<div class="chart">
+<div id="scale"></div>
+<div id="grid"></div>
+<div id="ruler"></div>
+<div id="people"></div>
+<div class="floor">
+<div class="floor-scene"></div>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<!-- Results & Share aligned with chart -->
+<div class="bottom-bar">
+<div class="results" id="results"></div>
+<div class="shareBar">
+<button id="downloadBtn" class="share-btn"><i class="fa fa-download"></i> Download Image</button>
+<button id="copyBtn" class="share-btn"><i class="fa fa-link"></i> Copy Link</button>
+<div class="share-dropdown">
+<button class="share-btn share-toggle"><i class="fa fa-share"></i> Share Image</button>
+<div class="share-menu" id="shareMenu">
+<button onclick="share('facebook')"><i class="fab fa-facebook" style="color:#1877F2"></i> Facebook</button>
+<button onclick="share('twitter')"><i class="fab fa-twitter" style="color:#1DA1F2"></i> Twitter</button>
+<button onclick="share('whatsapp')"><i class="fab fa-whatsapp" style="color:#25D366"></i> WhatsApp</button>
+</div>
+</div>
+</div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="script.js"></script>
+<script>
+// Build avatar SVG grids
+buildAvatarGrids();
+
+// Avatar dropdown toggle
+document.getElementById('avatarDropdownToggle').onclick = () => {
+  let dropdown = document.querySelector('.avatar-dropdown');
+  dropdown.classList.toggle('open');
+};
+
+// Avatar tabs
+document.querySelectorAll('.avatar-tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.avatar-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('avatarMale').style.display = 'none';
+    document.getElementById('avatarFemale').style.display = 'none';
+    document.getElementById('avatarChild').style.display = 'none';
+    document.getElementById('avatar' + tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1)).style.display = 'grid';
+  };
+});
+
+// Color picker
+document.querySelectorAll('.color-dot:not(.color-custom)').forEach(dot => {
+  dot.onclick = () => {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+    dot.classList.add('selected');
+    updateAvatarColors(dot.dataset.color);
+  };
+});
+
+// Custom color picker
+const customColorInput = document.getElementById('customColorInput');
+const customColorBtn = document.getElementById('customColorBtn');
+customColorBtn.onclick = (e) => {
+  customColorInput.click();
+};
+customColorInput.oninput = (e) => {
+  e.stopPropagation();
+  let color = customColorInput.value;
+  customColorBtn.style.background = color;
+  customColorBtn.dataset.color = color;
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  customColorBtn.classList.add('selected');
+  updateAvatarColors(color);
+};
+customColorInput.onclick = (e) => e.stopPropagation();
+
+// Share menu toggle
+document.querySelector('.share-toggle').onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById('shareMenu').classList.toggle('show');
+};
+document.addEventListener('click', () => {
+  document.getElementById('shareMenu').classList.remove('show');
+});
+
+// Step field increment/decrement
+function stepField(id, dir) {
+  const el = document.getElementById(id);
+  let val = parseInt(el.value) || 0;
+  let min = parseInt(el.min);
+  let max = parseInt(el.max);
+  val += dir;
+  if (val < min) val = min;
+  if (val > max) val = max;
+  el.value = val;
+  el.dispatchEvent(new Event('input'));
+}
+
+// Sync slider with ft/inch display
+const sliderEl = document.getElementById('slider');
+const sliderVal = document.getElementById('sliderValue');
+const feetEl = document.getElementById('feet');
+const inchEl = document.getElementById('inch');
+const heightCmEl = document.getElementById('heightCm');
+
+function cmToFtIn(cm) {
+  let totalInches = cm / 2.54;
+  let ft = Math.floor(totalInches / 12);
+  let inc = Math.round(totalInches % 12);
+  if (inc === 12) { ft++; inc = 0; }
+  return { ft, inc };
+}
+
+function ftInToCm(ft, inc) {
+  return (ft * 30.48) + (inc * 2.54);
+}
+
+sliderEl.oninput = function() {
+  let cm = parseInt(this.value);
+  heightCmEl.value = cm;
+  let conv = cmToFtIn(cm);
+  feetEl.value = conv.ft;
+  inchEl.value = conv.inc;
+  sliderVal.textContent = cm + ' cm';
+};
+
+feetEl.oninput = inchEl.oninput = function() {
+  let cm = Math.round(ftInToCm(parseInt(feetEl.value)||0, parseInt(inchEl.value)||0));
+  heightCmEl.value = cm;
+  sliderEl.value = cm;
+  sliderVal.textContent = cm + ' cm';
+};
+
+// Unit toggle: show/hide cm vs ft/inch fields
+const unitSelect = document.getElementById('unit');
+const heightInputsDiv = document.querySelector('.height-inputs');
+const cmBoxDiv = document.getElementById('cmBox');
+
+unitSelect.onchange = function() {
+  if (this.value === 'cm') {
+    heightInputsDiv.style.display = 'none';
+    cmBoxDiv.style.display = 'block';
+  } else {
+    heightInputsDiv.style.display = 'flex';
+    cmBoxDiv.style.display = 'none';
+  }
+};
+
+// Sync cm input with slider too
+heightCmEl.oninput = function() {
+  let cm = parseInt(this.value) || 0;
+  sliderEl.value = cm;
+  sliderVal.textContent = cm + ' cm';
+  let conv = cmToFtIn(cm);
+  feetEl.value = conv.ft;
+  inchEl.value = conv.inc;
+};
+
+// Photo preview
+const photoInput = document.getElementById('photo');
+const photoPreview = document.getElementById('photoPreview');
+const photoPreviewImg = document.getElementById('photoPreviewImg');
+const removePhotoBtn = document.getElementById('removePhoto');
+
+photoInput.onchange = function() {
+  if (this.files && this.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      photoPreviewImg.src = e.target.result;
+      photoPreview.style.display = 'block';
+    };
+    reader.readAsDataURL(this.files[0]);
+  }
+};
+
+removePhotoBtn.onclick = function() {
+  photoInput.value = '';
+  photoPreview.style.display = 'none';
+  photoPreviewImg.src = '';
+};
+</script>
+
+</body>
+</html>
