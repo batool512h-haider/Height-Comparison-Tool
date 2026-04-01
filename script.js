@@ -357,61 +357,61 @@ let sorted=[...people].sort((a,b)=>b.height-a.height)
 if(!sorted.length){ showResults(sorted); return }
 
 const SCALE_W = 120
-const GAP = 12           // guaranteed gap between adjacent avatars
-const MAX_AVATAR_W = 100
-const MIN_AVATAR_W = 20
-const LABEL_H = 16       // px height of one label row
+const BASE_AVATAR_W = 80   // base avatar width at no compression
+const BASE_GAP = 20        // base gap between avatars at no compression
+const MIN_AVATAR_W = 18
+const LABEL_H = 16
 
 let chartWidth = document.querySelector(".chart").offsetWidth
 let usableW = chartWidth - SCALE_W
 let n = sorted.length
 
-// Slot = equal share of usable width. Avatar = slot - GAP, clamped.
-let slotW = usableW / n
-let avatarW = Math.max(MIN_AVATAR_W, Math.min(MAX_AVATAR_W, slotW - GAP))
-// Actual margin on each side of avatar within its slot
-let margin = (slotW - avatarW) / 2
+// Compression ratio: scale down proportionally when avatars don't fit at base size
+let compression = Math.min(1, usableW / (n * (BASE_AVATAR_W + BASE_GAP)))
+let avatarW = Math.max(MIN_AVATAR_W, Math.round(BASE_AVATAR_W * compression))
+let gap = Math.round(BASE_GAP * compression)
+let slotW = avatarW + gap
 
-// Avatar left edges: slot i starts at SCALE_W + i*slotW, avatar is inset by margin.
-// Right-clamp only: ensure last avatar doesn't exit chart right edge.
+// Total width of all avatars; center the group in usable area
+let totalW = n * slotW - gap
+let groupStart = SCALE_W + Math.max(0, Math.round((usableW - totalW) / 2))
+
+// Avatar left edges: evenly spaced from groupStart, clamped inside chart
 let avatarLefts = sorted.map((_, i) => {
-  let left = SCALE_W + i * slotW + margin
-  // Clamp right edge only; left boundary is guaranteed by margin >= GAP/2 > 0
-  return Math.min(Math.round(left), chartWidth - Math.round(avatarW))
+  let left = groupStart + i * slotW
+  // Clamp so avatar never exits right edge
+  return Math.min(left, chartWidth - avatarW)
 })
 
 // Center X of each avatar for label anchoring
-let centerXs = avatarLefts.map(l => l + Math.round(avatarW) / 2)
+let centerXs = avatarLefts.map(l => l + avatarW / 2)
 
-let showName = avatarW >= 55
-let showHeightLabel = avatarW >= 22
+let showName = avatarW >= 50
+let showHeightLabel = avatarW >= MIN_AVATAR_W
 
-// Vertical label stacking: resolve collisions by pushing labels upward
-// Each label's natural position is top:-22px on its .person div.
-// In absolute chart coords (from top of #people): labelY = (trackH - heightPx) - 22
-// where trackH = scale.offsetHeight, heightPx = cmToPx(height)
+// Label collision: stack overlapping labels vertically, centered above each avatar
+// Natural label top in #people coords: (trackH - heightPx) - 22
 let trackH = scale.offsetHeight
 let labelTopOffsets = sorted.map(() => 0)
 if(showHeightLabel){
-  // placed[i] = {top, bottom} in chart-from-top coords
-  let placed = []
+  let placed = [] // {cx, top, bottom}
   for(let i = 0; i < n; i++){
     let naturalTop = (trackH - cmToPx(sorted[i].height)) - 22
-    let top = naturalTop - labelTopOffsets[i]
+    let top = naturalTop
     let bottom = top + LABEL_H
-    // Check against all already-placed labels
+    // Check all already-placed labels for horizontal + vertical overlap
     for(let j = 0; j < placed.length; j++){
-      // Only resolve if horizontally close enough to overlap
-      if(Math.abs(centerXs[i] - centerXs[j]) < 88){
+      if(Math.abs(centerXs[i] - placed[j].cx) < 90){
         if(top < placed[j].bottom && bottom > placed[j].top){
-          // Push this label up to clear the placed one
-          labelTopOffsets[i] += placed[j].top - bottom - 2
-          top = naturalTop - labelTopOffsets[i]
+          // Stack above the conflicting label
+          let shift = placed[j].top - bottom - 2
+          labelTopOffsets[i] += shift
+          top = naturalTop + labelTopOffsets[i]
           bottom = top + LABEL_H
         }
       }
     }
-    placed.push({top, bottom})
+    placed.push({cx: centerXs[i], top, bottom})
   }
 }
 
@@ -683,12 +683,22 @@ link.click()
 })
 }
 
+function showToast(msg){
+let toast=document.createElement("div")
+toast.className="toast"
+toast.innerHTML='<svg class="toast-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#2563EB" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5-5" stroke="#2563EB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>'+msg+'</span>'
+document.body.appendChild(toast)
+requestAnimationFrame(()=>toast.classList.add("toast--show"))
+setTimeout(()=>{
+toast.classList.remove("toast--show")
+toast.addEventListener("transitionend",()=>toast.remove(),{once:true})
+},2500)
+}
+
 // Copy share link with data
 document.getElementById("copyBtn").onclick=()=>{
 let link=generateShareLink()
-navigator.clipboard.writeText(link).then(()=>{
-alert("Share link copied!")
-})
+navigator.clipboard.writeText(link).then(()=>showToast("Share link copied!"))
 }
 
 function share(platform){
