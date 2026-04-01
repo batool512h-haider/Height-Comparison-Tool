@@ -788,49 +788,52 @@ body {
   border: 2px solid rgba(255,255,255,0.5);
 }
 
-/* Height label at top of person */
+/* Stacked multi-line height label */
 .person .heightLabel {
   position: absolute;
-  top: -22px;
+  top: -62px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-  white-space: nowrap;
   z-index: 5;
   text-align: center;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 5px;
   transition: opacity 0.15s;
+}
+
+.person .heightLabel .lbl-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+}
+
+.person .heightLabel .lbl-val {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.25;
+  letter-spacing: 0.1px;
 }
 
 /* Dense mode: height label hidden until hover */
 .person .heightLabel--hover {
   opacity: 0;
   pointer-events: none;
-  font-size: 11px;
-  top: -18px;
 }
 .person:hover .heightLabel--hover {
   opacity: 1;
   pointer-events: auto;
 }
 
-/* Dense mode: narrow height line */
-.person--dense::after {
+/* Dense mode: narrow head line */
+.person--dense .headLine {
   width: 30px;
-}
-
-/* Height line — short, centered above each avatar */
-.person::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 1px;
-  background: rgba(71,85,105,0.45);
-  z-index: 4;
 }
 
 /* Selected person highlight */
@@ -841,10 +844,22 @@ body {
 }
 
 .personSelected .heightLabel {
+  background: rgba(37,99,235,0.08);
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+
+.personSelected .heightLabel .lbl-name {
+  color: #93c5fd;
+}
+
+.personSelected .heightLabel .lbl-val {
+  color: #1d4ed8;
+}
+
+.personSelected .headLine {
   background: #2563EB;
-  color: white;
-  padding: 3px 10px;
-  border-radius: 6px;
+  height: 2px;
 }
 
 /* Cancel edit button */
@@ -871,23 +886,24 @@ body {
   background: linear-gradient(135deg, #27AE60, #219A52) !important;
 }
 
-/* Name label - above height label */
-.person .nameLabel {
+/* Head-height measurement line */
+.person .headLine {
   position: absolute;
-  top: -38px;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 11px;
-  font-weight: 600;
-  color: #475569;
-  white-space: nowrap;
-  z-index: 5;
+  width: 56px;
+  height: 1.5px;
+  background: #64748b;
+  z-index: 4;
+  border-radius: 1px;
+  image-rendering: crisp-edges;
 }
 
 /* Hover actions - edit/delete */
 .person .hover-actions {
   position: absolute;
-  top: -60px;
+  top: -80px;
   left: 50%;
   transform: translateX(-50%);
   display: none;

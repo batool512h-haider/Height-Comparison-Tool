@@ -360,7 +360,8 @@ const SCALE_W = 120
 const BASE_AVATAR_W = 80   // base avatar width at no compression
 const BASE_GAP = 20        // base gap between avatars at no compression
 const MIN_AVATAR_W = 18
-const LABEL_H = 16
+const LABEL_H = 58         // matches stacked label height (name + 2 vals + gap + padding)
+const LABEL_W = 80         // approximate label width for boundary clamping
 
 let chartWidth = document.querySelector(".chart").offsetWidth
 let usableW = chartWidth - SCALE_W
@@ -390,20 +391,18 @@ let showName = avatarW >= 50
 let showHeightLabel = avatarW >= MIN_AVATAR_W
 
 // Label collision: stack overlapping labels vertically, centered above each avatar
-// Natural label top in #people coords: (trackH - heightPx) - 22
 let trackH = scale.offsetHeight
 let labelTopOffsets = sorted.map(() => 0)
+let labelXOffsets = sorted.map(() => 0)  // horizontal nudge for boundary clamping
 if(showHeightLabel){
-  let placed = [] // {cx, top, bottom}
+  let placed = []
   for(let i = 0; i < n; i++){
-    let naturalTop = (trackH - cmToPx(sorted[i].height)) - 22
+    let naturalTop = (trackH - cmToPx(sorted[i].height)) - LABEL_H - 4
     let top = naturalTop
     let bottom = top + LABEL_H
-    // Check all already-placed labels for horizontal + vertical overlap
     for(let j = 0; j < placed.length; j++){
-      if(Math.abs(centerXs[i] - placed[j].cx) < 90){
+      if(Math.abs(centerXs[i] - placed[j].cx) < LABEL_W + 10){
         if(top < placed[j].bottom && bottom > placed[j].top){
-          // Stack above the conflicting label
           let shift = placed[j].top - bottom - 2
           labelTopOffsets[i] += shift
           top = naturalTop + labelTopOffsets[i]
@@ -412,6 +411,11 @@ if(showHeightLabel){
       }
     }
     placed.push({cx: centerXs[i], top, bottom})
+    // Boundary-aware horizontal clamping
+    let labelLeft = centerXs[i] - LABEL_W / 2
+    let labelRight = centerXs[i] + LABEL_W / 2
+    if(labelLeft < SCALE_W + 4) labelXOffsets[i] = SCALE_W + 4 - labelLeft
+    else if(labelRight > chartWidth - 4) labelXOffsets[i] = (chartWidth - 4) - labelRight
   }
 }
 
@@ -456,26 +460,33 @@ div.appendChild(face)
 
 let totalIn=p.height/2.54
 let lFt=Math.floor(totalIn/12)
-let lIn=Math.round(totalIn%12)
+let lInExact=(totalIn%12)
+let lIn=Math.round(lInExact)
 if(lIn===12){lFt++;lIn=0}
 
-// Height label with vertical stacking offset for collision avoidance
-let label=document.createElement("span")
+// Stacked multi-line label
+let label=document.createElement("div")
 label.className="heightLabel"
-label.innerHTML='<b>'+lFt+"'"+lIn+'" / '+Math.round(p.height)+' cm</b>'
+label.innerHTML=
+  '<span class="lbl-name">'+p.name+'</span>'+
+  '<span class="lbl-val">cm: '+Math.round(p.height)+'</span>'+
+  '<span class="lbl-val">ft: '+lFt+"' "+lIn+'"'+'</span>'
+
+let labelH = LABEL_H
 if(showHeightLabel){
-  if(labelTopOffsets[i] !== 0) label.style.top = (-22 + labelTopOffsets[i]) + "px"
+  let topVal = -(labelH + 4) + labelTopOffsets[i]
+  label.style.top = topVal + "px"
+  if(labelXOffsets[i] !== 0) label.style.marginLeft = labelXOffsets[i] + "px"
   div.appendChild(label)
 } else {
   label.className="heightLabel heightLabel--hover"
   div.appendChild(label)
 }
 
-// Name label
-let nameTag=document.createElement("span")
-nameTag.className="nameLabel"
-nameTag.innerText=p.name
-if(showName) div.appendChild(nameTag)
+// Thin line at head height
+let headLine=document.createElement("div")
+headLine.className="headLine"
+div.appendChild(headLine)
 
 // Hover actions (edit/delete)
 let origIndex=people.indexOf(p)
