@@ -107,6 +107,10 @@ let selectedAvatarColor = "#F39C12"
 
 document.getElementById("addBtn").onclick=()=>{
 
+if(editingIndex===-1 && people.length>=9){
+showToast("You can compare up to 9 people at a time")
+return
+}
 let name=document.getElementById("name").value
 if(name==="" && editingIndex===-1) name="Person "+personCount++
 if(name==="") name=people[editingIndex].name
@@ -357,14 +361,14 @@ let sorted=[...people].sort((a,b)=>b.height-a.height)
 if(!sorted.length){ showResults(sorted); return }
 
 const SCALE_W = 120
+const SAFE_GAP = 32         // clear visual gap between scale boundary and any avatar
 const BASE_AVATAR_W = 80   // base avatar width at no compression
 const BASE_GAP = 20        // base gap between avatars at no compression
 const MIN_AVATAR_W = 18
-const LABEL_H = 58         // matches stacked label height (name + 2 vals + gap + padding)
-const LABEL_W = 80         // approximate label width for boundary clamping
+const LABEL_H = 16
 
 let chartWidth = document.querySelector(".chart").offsetWidth
-let usableW = chartWidth - SCALE_W
+let usableW = chartWidth - SCALE_W - SAFE_GAP  // reserve SAFE_GAP from left
 let n = sorted.length
 
 // Compression ratio: scale down proportionally when avatars don't fit at base size
@@ -375,13 +379,14 @@ let slotW = avatarW + gap
 
 // Total width of all avatars; center the group in usable area
 let totalW = n * slotW - gap
-let groupStart = SCALE_W + Math.max(0, Math.round((usableW - totalW) / 2))
+let groupStart = SCALE_W + SAFE_GAP + Math.max(0, Math.round((usableW - totalW) / 2))
 
-// Avatar left edges: evenly spaced from groupStart, clamped inside chart
+// Avatar left edges: evenly spaced from groupStart
+// Left-clamped to SCALE_W + SAFE_GAP, right-clamped to chart edge
+const LEFT_BOUND = SCALE_W + SAFE_GAP
 let avatarLefts = sorted.map((_, i) => {
   let left = groupStart + i * slotW
-  // Clamp so avatar never exits right edge
-  return Math.min(left, chartWidth - avatarW)
+  return Math.min(Math.max(left, LEFT_BOUND), chartWidth - avatarW)
 })
 
 // Center X of each avatar for label anchoring
@@ -391,17 +396,19 @@ let showName = avatarW >= 50
 let showHeightLabel = avatarW >= MIN_AVATAR_W
 
 // Label collision: stack overlapping labels vertically, centered above each avatar
+// Natural label top in #people coords: (trackH - heightPx) - 22
 let trackH = scale.offsetHeight
 let labelTopOffsets = sorted.map(() => 0)
-let labelXOffsets = sorted.map(() => 0)  // horizontal nudge for boundary clamping
+let labelLeftNudge = sorted.map(() => 0)  // px nudge to keep label right of LEFT_BOUND
+const EST_LABEL_W = 90  // conservative estimate of label pixel width
 if(showHeightLabel){
-  let placed = []
+  let placed = [] // {cx, top, bottom}
   for(let i = 0; i < n; i++){
-    let naturalTop = (trackH - cmToPx(sorted[i].height)) - LABEL_H - 4
+    let naturalTop = (trackH - cmToPx(sorted[i].height)) - 22
     let top = naturalTop
     let bottom = top + LABEL_H
     for(let j = 0; j < placed.length; j++){
-      if(Math.abs(centerXs[i] - placed[j].cx) < LABEL_W + 10){
+      if(Math.abs(centerXs[i] - placed[j].cx) < 90){
         if(top < placed[j].bottom && bottom > placed[j].top){
           let shift = placed[j].top - bottom - 2
           labelTopOffsets[i] += shift
@@ -411,11 +418,9 @@ if(showHeightLabel){
       }
     }
     placed.push({cx: centerXs[i], top, bottom})
-    // Boundary-aware horizontal clamping
-    let labelLeft = centerXs[i] - LABEL_W / 2
-    let labelRight = centerXs[i] + LABEL_W / 2
-    if(labelLeft < SCALE_W + 4) labelXOffsets[i] = SCALE_W + 4 - labelLeft
-    else if(labelRight > chartWidth - 4) labelXOffsets[i] = (chartWidth - 4) - labelRight
+    // Nudge label right if its left edge would cross into the scale area
+    let labelLeft = centerXs[i] - EST_LABEL_W / 2
+    if(labelLeft < LEFT_BOUND) labelLeftNudge[i] = LEFT_BOUND - labelLeft
   }
 }
 
@@ -460,30 +465,26 @@ div.appendChild(face)
 
 let totalIn=p.height/2.54
 let lFt=Math.floor(totalIn/12)
-let lInExact=(totalIn%12)
-let lIn=Math.round(lInExact)
+let lIn=Math.round(totalIn%12)
 if(lIn===12){lFt++;lIn=0}
 
-// Stacked multi-line label
+// Stacked height label
 let label=document.createElement("div")
 label.className="heightLabel"
 label.innerHTML=
   '<span class="lbl-name">'+p.name+'</span>'+
   '<span class="lbl-val">cm: '+Math.round(p.height)+'</span>'+
-  '<span class="lbl-val">ft: '+lFt+"' "+lIn+'"'+'</span>'
-
-let labelH = LABEL_H
+  '<span class="lbl-val">ft: '+lFt+"' "+lIn+'"</span>'
 if(showHeightLabel){
-  let topVal = -(labelH + 4) + labelTopOffsets[i]
-  label.style.top = topVal + "px"
-  if(labelXOffsets[i] !== 0) label.style.marginLeft = labelXOffsets[i] + "px"
+  if(labelTopOffsets[i] !== 0) label.style.top = (-22 + labelTopOffsets[i]) + "px"
+  if(labelLeftNudge[i] !== 0) label.style.transform = "translateX(calc(-50% + "+labelLeftNudge[i]+"px))"
   div.appendChild(label)
 } else {
   label.className="heightLabel heightLabel--hover"
   div.appendChild(label)
 }
 
-// Thin line at head height
+// Head-top line
 let headLine=document.createElement("div")
 headLine.className="headLine"
 div.appendChild(headLine)
