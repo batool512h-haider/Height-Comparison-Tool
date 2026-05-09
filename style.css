@@ -595,7 +595,7 @@ body {
 
 .scaleLine {
   position: absolute;
-  right: -12px;
+  right: 0;
   width: 10px;
   height: 1px;
   background: rgba(100,116,139,0.3);

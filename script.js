@@ -361,7 +361,7 @@ let sorted=[...people].sort((a,b)=>b.height-a.height)
 if(!sorted.length){ showResults(sorted); return }
 
 const SCALE_W = 120
-const SAFE_GAP = 32         // clear visual gap between scale boundary and any avatar
+const SAFE_GAP = 48         // clear visual gap between scale boundary and any avatar
 const BASE_AVATAR_W = 80   // base avatar width at no compression
 const BASE_GAP = 20        // base gap between avatars at no compression
 const MIN_AVATAR_W = 18
